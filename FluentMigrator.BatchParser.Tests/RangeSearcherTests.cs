@@ -237,7 +237,6 @@ namespace FluentMigrator.BatchParser.Tests
             var reader = source.CreateReader();
             Assert.IsNotNull(reader);
 
-            var foundStart = false;
             var content = new StringBuilder();
             var writer = new StringWriter(content)
             {
@@ -247,19 +246,15 @@ namespace FluentMigrator.BatchParser.Tests
             var rangeSearcher = new SingleLineComment();
             while (reader != null)
             {
-                if (!foundStart)
+                var startIndex = rangeSearcher.FindStartCode(reader);
+                if (startIndex == -1)
                 {
-                    var startIndex = rangeSearcher.FindStartCode(reader);
-                    if (startIndex == -1)
-                    {
-                        reader = reader.Advance(reader.Length);
-                        continue;
-                    }
-
-                    foundStart = true;
-                    reader = reader.Advance(startIndex + rangeSearcher.StartCodeLength);
-                    Assert.IsNotNull(reader);
+                    reader = reader.Advance(reader.Length);
+                    continue;
                 }
+
+                reader = reader.Advance(startIndex + rangeSearcher.StartCodeLength);
+                Assert.IsNotNull(reader);
 
                 var endInfo = rangeSearcher.FindEndCode(reader);
                 Assert.IsNotNull(endInfo);
@@ -267,10 +262,8 @@ namespace FluentMigrator.BatchParser.Tests
                 var contentLength = endInfo.Index - reader.Index;
                 writer.Write(reader.ReadString(contentLength));
                 reader = reader.Advance(contentLength + rangeSearcher.EndCodeLength);
-                foundStart = false;
             }
 
-            Assert.IsFalse(foundStart);
             Assert.AreEqual(expected, content.ToString());
         }
 
