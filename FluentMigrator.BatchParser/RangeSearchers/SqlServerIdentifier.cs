@@ -1,6 +1,6 @@
 ﻿namespace FluentMigrator.BatchParser.RangeSearchers
 {
-    public class SqlServerIdentifier : CharWithEscapeByDuplication
+    public sealed class SqlServerIdentifier : CharWithEscapeByDuplication
     {
         public SqlServerIdentifier()
             : base('[', ']')

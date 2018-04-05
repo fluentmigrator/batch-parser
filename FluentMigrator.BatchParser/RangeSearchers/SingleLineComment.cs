@@ -2,7 +2,7 @@
 
 namespace FluentMigrator.BatchParser.RangeSearchers
 {
-    public class SingleLineComment : IRangeSearcher
+    public sealed class SingleLineComment : IRangeSearcher
     {
         private static readonly Regex _startCodeRegex = new Regex("--", RegexOptions.CultureInvariant | RegexOptions.Compiled);
 

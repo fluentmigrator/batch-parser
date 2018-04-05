@@ -1,6 +1,6 @@
 ﻿namespace FluentMigrator.BatchParser.RangeSearchers
 {
-    public class SqlString : CharWithEscapeByDuplication
+    public sealed class SqlString : CharWithEscapeByDuplication
     {
         public SqlString()
             : base('\'')

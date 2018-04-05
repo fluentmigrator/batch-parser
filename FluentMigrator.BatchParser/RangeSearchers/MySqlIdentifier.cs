@@ -1,6 +1,6 @@
 ﻿namespace FluentMigrator.BatchParser.RangeSearchers
 {
-    public class MySqlIdentifier : CharWithEscapeByDuplication
+    public sealed class MySqlIdentifier : CharWithEscapeByDuplication
     {
         public MySqlIdentifier()
             : base('`')

@@ -1,6 +1,6 @@
 ﻿namespace FluentMigrator.BatchParser.RangeSearchers
 {
-    public class MultiLineComment : StringWithNoEscape
+    public sealed class MultiLineComment : StringWithNoEscape
     {
         public MultiLineComment()
             : base("/*", "*/", true)
