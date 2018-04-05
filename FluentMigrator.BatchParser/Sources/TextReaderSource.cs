@@ -56,6 +56,8 @@ namespace FluentMigrator.BatchParser.Sources
 
             public int Index { get; }
 
+            public int Length => Line.Length - Index;
+
             public string ReadString(int length)
             {
                 return Line.Substring(Index, length);

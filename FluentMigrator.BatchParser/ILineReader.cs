@@ -7,6 +7,7 @@ namespace FluentMigrator.BatchParser
         [NotNull]
         string Line { get; }
         int Index { get; }
+        int Length { get; }
 
         [NotNull]
         string ReadString(int length);

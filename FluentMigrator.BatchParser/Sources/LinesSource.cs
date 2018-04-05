@@ -34,7 +34,10 @@ namespace FluentMigrator.BatchParser.Sources
             }
 
             public string Line => _enumerator.Current;
+
             public int Index { get; }
+
+            public int Length => Line.Length - Index;
 
             public string ReadString(int length)
             {
