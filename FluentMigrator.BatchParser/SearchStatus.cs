@@ -58,13 +58,34 @@ namespace FluentMigrator.BatchParser
             var result = searcher.FindEndCode(_reader);
             if (result == null)
             {
-                var reader = WriteSql(_reader);
+                var reader = _reader;
+                if (_context.StripComments && searcher.IsComment)
+                {
+                    reader = reader.Advance(reader.Length);
+                }
+                else
+                {
+                    reader = WriteSql(reader);
+                }
+
                 if (reader == null)
                     throw new InvalidOperationException($"Missing end of range ({searcher.GetType().Name})");
                 return new SearchStatus(_context, reader, _activeRanges, null);
             }
 
-            var nextReader = WriteSql(_reader, result.Index + searcher.EndCodeLength);
+            if (result.IsNestedStart)
+            {
+                var reader = _reader;
+
+                if (_context.StripComments && searcher.IsComment)
+                {
+                    reader = reader.Advance(result.Index - reader.Index);
+                }
+
+                return UseNewRange(reader, new RangeStart(result.NestedRangeSearcher, result.Index));
+            }
+
+            var nextReader = WriteSql(_reader, searcher, result);
             if (nextReader == null)
                 return null;
 
@@ -98,11 +119,17 @@ namespace FluentMigrator.BatchParser
                 return new SearchStatus(_context, reader, _activeRanges, null);
             }
 
-            var nextReader = WriteSql(_reader, rangeStart.Index + rangeStart.Searcher.StartCodeLength);
-            if (nextReader == null)
-                throw new InvalidOperationException($"Missing end of range ({rangeStart.Searcher.GetType().Name})");
+            return UseNewRange(_reader, rangeStart);
+        }
 
-            _activeRanges.Push(rangeStart.Searcher);
+        [NotNull]
+        private SearchStatus UseNewRange([NotNull] ILineReader reader, [NotNull] RangeStart info)
+        {
+            var nextReader = WriteSql(reader, info);
+            if (nextReader == null)
+                throw new InvalidOperationException($"Missing end of range ({info.Searcher.GetType().Name})");
+
+            _activeRanges.Push(info.Searcher);
             return new SearchStatus(_context, nextReader, _activeRanges, null);
         }
 
@@ -115,13 +142,35 @@ namespace FluentMigrator.BatchParser
         }
 
         [CanBeNull]
+        private ILineReader WriteSql([NotNull] ILineReader reader, [NotNull] RangeStart info)
+        {
+            if (info.Searcher.IsComment && _context.StripComments)
+                return WriteSql(reader, info.Index, info.Searcher.StartCodeLength);
+            return WriteSql(reader, info.Index + info.Searcher.StartCodeLength);
+        }
+
+        [CanBeNull]
+        private ILineReader WriteSql([NotNull] ILineReader reader, [NotNull] IRangeSearcher searcher, [NotNull] EndCodeSearchResult info)
+        {
+            if (searcher.IsComment && _context.StripComments)
+            {
+                var length = info.Index - reader.Index + searcher.EndCodeLength;
+                if (length == reader.Length)
+                    _context.OnBatchSql(new SqlBatchCollectorEventArgs(string.Empty, true));
+                return reader.Advance(length);
+            }
+
+            return WriteSql(_reader, info.Index + searcher.EndCodeLength);
+        }
+
+        [CanBeNull]
         private ILineReader WriteSql([NotNull] ILineReader reader, int itemIndex, int skipLength = 0)
         {
             var readLength = itemIndex - reader.Index;
             var content = reader.ReadString(readLength);
-            if (!string.IsNullOrEmpty(content))
+            var isEndOfLine = readLength == reader.Length;
+            if (!string.IsNullOrEmpty(content) || isEndOfLine)
             {
-                var isEndOfLine = (readLength + skipLength) == reader.Length;
                 _context.OnBatchSql(new SqlBatchCollectorEventArgs(content, isEndOfLine));
             }
 

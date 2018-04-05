@@ -170,6 +170,65 @@ namespace FluentMigrator.BatchParser.Tests
         }
 
         [Test]
+        public void TestSqlStrippedCommentWithoutGo()
+        {
+            var output = new List<string>();
+            var specialTokens = new List<string>();
+            var batchParser = new SqlServerBatchParser("\n");
+            batchParser.SqlText += (sender, evt) => { output.Add(evt.SqlText); };
+            batchParser.SpecialToken += (sender, evt) => { specialTokens.Add(evt.Token); };
+            var source = new TextReaderSource(new StringReader("/* test */"));
+            batchParser.Process(source, true);
+            Assert.AreEqual(0, output.Count);
+            Assert.AreEqual(0, specialTokens.Count);
+        }
+
+        [Test]
+        public void TestSqlStrippedMultiLineCommentWithoutGo()
+        {
+            var output = new List<string>();
+            var specialTokens = new List<string>();
+            var batchParser = new SqlServerBatchParser("\n");
+            batchParser.SqlText += (sender, evt) => { output.Add(evt.SqlText); };
+            batchParser.SpecialToken += (sender, evt) => { specialTokens.Add(evt.Token); };
+            var source = new TextReaderSource(new StringReader("/* t \n est */"));
+            batchParser.Process(source, true);
+            Assert.AreEqual(0, output.Count);
+            Assert.AreEqual(0, specialTokens.Count);
+        }
+
+        [TestCase("/* t \n est */qweqwe", "qweqwe\n")]
+        [TestCase("/* t \n est */\nqweqwe", "\nqweqwe\n")]
+        public void TestSqlStrippedMultiLineCommentAndSqlWithoutGo(string input, string expected)
+        {
+            var output = new List<string>();
+            var specialTokens = new List<string>();
+            var batchParser = new SqlServerBatchParser("\n");
+            batchParser.SqlText += (sender, evt) => { output.Add(evt.SqlText); };
+            batchParser.SpecialToken += (sender, evt) => { specialTokens.Add(evt.Token); };
+            var source = new TextReaderSource(new StringReader(input));
+            batchParser.Process(source, true);
+            Assert.AreEqual(1, output.Count);
+            Assert.AreEqual(expected, output[0]);
+            Assert.AreEqual(0, specialTokens.Count);
+        }
+
+        [TestCase("-- blah\nqweqwe", "\nqweqwe\n")]
+        public void TestSqlStrippedSingleLineCommentAndSqlWithoutGo(string input, string expected)
+        {
+            var output = new List<string>();
+            var specialTokens = new List<string>();
+            var batchParser = new SqlServerBatchParser("\n");
+            batchParser.SqlText += (sender, evt) => { output.Add(evt.SqlText); };
+            batchParser.SpecialToken += (sender, evt) => { specialTokens.Add(evt.Token); };
+            var source = new TextReaderSource(new StringReader(input));
+            batchParser.Process(source, true);
+            Assert.AreEqual(1, output.Count);
+            Assert.AreEqual(expected, output[0]);
+            Assert.AreEqual(0, specialTokens.Count);
+        }
+
+        [Test]
         public void TestSqlUnclosedMultiLineComment()
         {
             var output = new List<string>();

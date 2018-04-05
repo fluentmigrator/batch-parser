@@ -32,14 +32,14 @@ namespace FluentMigrator.BatchParser
         public event EventHandler<SpecialTokenEventArgs> SpecialToken;
         public event EventHandler<SqlTextEventArgs> SqlText;
 
-        public void Process(ITextSource source)
+        public void Process(ITextSource source, bool stripComments = false)
         {
             var output = new StringWriter()
             {
                 NewLine = _newLine,
             };
 
-            var context = new SearchContext(_rangeSearchers, _specialTokenSearchers);
+            var context = new SearchContext(_rangeSearchers, _specialTokenSearchers, stripComments);
             context.BatchSql += (sender, evt) =>
             {
                 output.Write(evt.SqlContent);

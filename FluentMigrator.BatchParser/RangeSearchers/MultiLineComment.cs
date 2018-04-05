@@ -3,7 +3,7 @@
     public class MultiLineComment : StringWithNoEscape
     {
         public MultiLineComment()
-            : base("/*", "*/")
+            : base("/*", "*/", true)
         {
         }
     }

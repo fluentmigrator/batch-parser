@@ -6,6 +6,9 @@ namespace FluentMigrator.BatchParser
     {
         int StartCodeLength { get; }
         int EndCodeLength { get; }
+
+        bool IsComment { get; }
+
         int FindStartCode([NotNull] ILineReader reader);
 
         [CanBeNull]

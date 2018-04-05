@@ -8,13 +8,12 @@ namespace FluentMigrator.BatchParser
 {
     internal sealed class SearchContext
     {
-        public event EventHandler<SqlBatchCollectorEventArgs> BatchSql;
-        public event EventHandler<SpecialTokenEventArgs> SpecialToken;
-
         public SearchContext(
             [NotNull, ItemNotNull] IEnumerable<IRangeSearcher> rangeHandlers,
-            [NotNull, ItemNotNull] IEnumerable<ISpecialTokenSearcher> specialTokenSearchers)
+            [NotNull, ItemNotNull] IEnumerable<ISpecialTokenSearcher> specialTokenSearchers,
+            bool stripComments)
         {
+            StripComments = stripComments;
             SpecialTokenSearchers = specialTokenSearchers as IList<ISpecialTokenSearcher> ?? specialTokenSearchers.ToList().AsReadOnly();
             RangeSearchers = rangeHandlers as IList<IRangeSearcher> ?? rangeHandlers.ToList().AsReadOnly();
         }
@@ -24,6 +23,11 @@ namespace FluentMigrator.BatchParser
 
         [NotNull, ItemNotNull]
         public IList<IRangeSearcher> RangeSearchers { get; }
+
+        public bool StripComments { get; }
+
+        public event EventHandler<SqlBatchCollectorEventArgs> BatchSql;
+        public event EventHandler<SpecialTokenEventArgs> SpecialToken;
 
         internal void OnBatchSql([NotNull] SqlBatchCollectorEventArgs e)
         {

@@ -9,6 +9,8 @@ namespace FluentMigrator.BatchParser.RangeSearchers
         public int StartCodeLength => 2;
         public int EndCodeLength => 0;
 
+        public bool IsComment => true;
+
         public int FindStartCode(ILineReader reader)
         {
             var match = _startCodeRegex.Match(reader.Line, reader.Index);

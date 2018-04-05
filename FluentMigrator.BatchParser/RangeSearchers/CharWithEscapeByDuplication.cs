@@ -8,16 +8,18 @@ namespace FluentMigrator.BatchParser.RangeSearchers
         private readonly Regex _startCodeRegex;
         private readonly Regex _endCodeRegex;
 
-        public CharWithEscapeByDuplication(char startAndEndChar)
+        public CharWithEscapeByDuplication(char startAndEndChar, bool isComment = false)
         {
+            IsComment = isComment;
             _endChar = startAndEndChar;
             var codePattern = Regex.Escape(startAndEndChar.ToString());
             _startCodeRegex = _endCodeRegex =
                 new Regex(codePattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         }
 
-        public CharWithEscapeByDuplication(char startChar, char endChar)
+        public CharWithEscapeByDuplication(char startChar, char endChar, bool isComment = false)
         {
+            IsComment = isComment;
             _endChar = endChar;
             var startCodePattern = Regex.Escape(startChar.ToString());
             var endCodePattern = Regex.Escape(endChar.ToString());
@@ -27,6 +29,8 @@ namespace FluentMigrator.BatchParser.RangeSearchers
 
         public int StartCodeLength => 1;
         public int EndCodeLength => 1;
+
+        public bool IsComment { get; }
 
         public int FindStartCode(ILineReader reader)
         {

@@ -7,8 +7,9 @@ namespace FluentMigrator.BatchParser.RangeSearchers
         private readonly Regex _startCodeRegex;
         private readonly Regex _endCodeRegex;
 
-        public StringWithNoEscape(string startAndEndCode)
+        public StringWithNoEscape(string startAndEndCode, bool isComment = false)
         {
+            IsComment = isComment;
             StartCodeLength = EndCodeLength = startAndEndCode.Length;
 
             var codePattern = Regex.Escape(startAndEndCode);
@@ -16,8 +17,9 @@ namespace FluentMigrator.BatchParser.RangeSearchers
             _startCodeRegex = _endCodeRegex = new Regex(codePattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         }
 
-        public StringWithNoEscape(string startCode, string endCode)
+        public StringWithNoEscape(string startCode, string endCode, bool isComment = false)
         {
+            IsComment = isComment;
             StartCodeLength = startCode.Length;
             EndCodeLength = endCode.Length;
 
@@ -30,6 +32,8 @@ namespace FluentMigrator.BatchParser.RangeSearchers
 
         public int StartCodeLength { get; }
         public int EndCodeLength { get; }
+
+        public bool IsComment { get; }
 
         public int FindStartCode(ILineReader reader)
         {
