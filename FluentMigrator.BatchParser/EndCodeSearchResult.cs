@@ -1,4 +1,6 @@
-﻿namespace FluentMigrator.BatchParser
+﻿using JetBrains.Annotations;
+
+namespace FluentMigrator.BatchParser
 {
     public class EndCodeSearchResult
     {
@@ -8,7 +10,7 @@
             NestedRangeSearcher = null;
         }
 
-        public EndCodeSearchResult(int index, IRangeSearcher nestedRangeSearcher)
+        public EndCodeSearchResult(int index, [CanBeNull] IRangeSearcher nestedRangeSearcher)
         {
             Index = index;
             NestedRangeSearcher = nestedRangeSearcher;
@@ -18,6 +20,7 @@
 
         public int Index { get; }
 
+        [CanBeNull]
         public IRangeSearcher NestedRangeSearcher { get; }
 
         public static implicit operator EndCodeSearchResult(int index)
