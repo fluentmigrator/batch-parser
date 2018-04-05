@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -271,6 +272,49 @@ namespace FluentMigrator.BatchParser.Tests
 
             Assert.IsFalse(foundStart);
             Assert.AreEqual(expected, content.ToString());
+        }
+
+        [Test]
+        public void TestNestingMultiLineComment()
+        {
+            var searchers = new Stack<IRangeSearcher>();
+            IRangeSearcher searcher = new NestingMultiLineComment();
+            var source = new TextReaderSource(new StringReader("/* /* */ */"));
+            var reader = source.CreateReader();
+            Assert.IsNotNull(reader);
+
+            Assert.AreEqual(0, searcher.FindStartCode(reader));
+            reader = reader.Advance(2);
+            Assert.IsNotNull(reader);
+
+            var endInfo = searcher.FindEndCode(reader);
+            Assert.NotNull(endInfo);
+            Assert.True(endInfo.IsNestedStart);
+
+            searchers.Push(searcher);
+            searcher = endInfo.NestedRangeSearcher;
+            Assert.NotNull(searcher);
+            Assert.AreEqual(3, endInfo.Index);
+
+            reader = reader.Advance(endInfo.Index - reader.Index + searcher.StartCodeLength);
+            Assert.IsNotNull(reader);
+
+            endInfo = searcher.FindEndCode(reader);
+            Assert.NotNull(endInfo);
+            Assert.IsFalse(endInfo.IsNestedStart);
+            Assert.AreEqual(6, endInfo.Index);
+
+            reader = reader.Advance(endInfo.Index - reader.Index + searcher.EndCodeLength);
+            Assert.IsNotNull(reader);
+
+            searcher = searchers.Pop();
+            endInfo = searcher.FindEndCode(reader);
+            Assert.NotNull(endInfo);
+            Assert.IsFalse(endInfo.IsNestedStart);
+            Assert.AreEqual(9, endInfo.Index);
+
+            reader = reader.Advance(endInfo.Index - reader.Index + searcher.EndCodeLength);
+            Assert.IsNull(reader);
         }
     }
 }
