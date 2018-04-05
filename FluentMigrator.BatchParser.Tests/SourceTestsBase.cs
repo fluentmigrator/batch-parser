@@ -44,6 +44,7 @@ namespace FluentMigrator.BatchParser.Tests
             Assert.IsNotNull(reader);
             Assert.AreEqual("asdasdasd", reader.Line);
             Assert.AreEqual(0, reader.Index);
+            Assert.AreEqual(9, reader.Length);
             Assert.Throws<ArgumentOutOfRangeException>(() => reader.ReadString(100));
         }
 
@@ -75,6 +76,7 @@ namespace FluentMigrator.BatchParser.Tests
             reader = newReader;
             Assert.AreEqual("sda", reader.ReadString(3));
             Assert.AreEqual(1, reader.Index);
+            Assert.AreEqual(8, reader.Length);
         }
 
         [Test]
