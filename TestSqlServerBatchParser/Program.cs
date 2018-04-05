@@ -1,36 +1,78 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Xml;
+
+using FluentMigrator.BatchParser;
+using FluentMigrator.BatchParser.Sources;
+
+using McMaster.Extensions.CommandLineUtils;
 
 namespace TestSqlServerBatchParser
 {
     class Program
     {
-        static void Main(string[] args)
+        private static readonly Regex _regex = new Regex(@"^\s*(?<statement>GO(\s+(?<count>\d)+)?)\s*$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+        private static string _sqlText;
+
+        static int Main(string[] args)
         {
-            var list = new List<(int key, string value)>();
-            list.Add((-1, "a"));
-            list.Add((-1, "b"));
-            list.Add((1, "c"));
-            list.Add((5, "d"));
-            list.Add((2, "e"));
-            list.Sort(new StringIndexComparer());
-            foreach (var item in list)
-            {
-                Console.WriteLine(item.value);
-            }
+            var app = new CommandLineApplication();
+            app.HelpOption();
+
+            var scriptFileName = app.Argument<string>("script", "SQL script file name")
+                                    .IsRequired();
+            var stripComments = app.Option("-s|--strip", "Strip comments", CommandOptionType.NoValue);
+
+            app.OnExecute(
+                () =>
+                {
+                    var batchParser = new SqlServerBatchParser();
+                    batchParser.SpecialToken += BatchParserOnSpecialToken;
+                    batchParser.SqlText += BatchParserOnSqlText;
+
+                    using (var source = new TextReaderSource(new StreamReader(scriptFileName.Value), true))
+                    {
+                        batchParser.Process(source, stripComments.HasValue());
+                    }
+
+                    RunSql();
+
+                    return 0;
+                });
+
+            return app.Execute(args);
         }
 
-        private class StringIndexComparer : IComparer<(int key, string value)>
+        private static void BatchParserOnSqlText(object sender, SqlTextEventArgs sqlTextEventArgs)
         {
-            public int Compare((int key, string value) x, (int key, string value) y)
+            _sqlText = sqlTextEventArgs.SqlText.Trim();
+        }
+
+        private static void BatchParserOnSpecialToken(object sender, SpecialTokenEventArgs specialTokenEventArgs)
+        {
+            var match = _regex.Match(specialTokenEventArgs.Token);
+            if (!match.Success)
+                throw new InvalidOperationException("Unknown special token");
+
+            var countGroup = match.Groups["count"];
+            var count = countGroup.Success && countGroup.Length != 0 ? Convert.ToInt32(countGroup.Value, 10) : 1;
+
+            RunSql(count);
+
+            _sqlText = null;
+        }
+
+        private static void RunSql(int count = 1)
+        {
+            if (string.IsNullOrEmpty(_sqlText))
+                return;
+
+            for (var i = 0; i != count; ++i)
             {
-                if (x.key == -1 && y.key == -1)
-                    return 0;
-                if (x.key == -1)
-                    return 1;
-                if (y.key == -1)
-                    return -1;
-                return x.key.CompareTo(y.key);
+                Console.WriteLine(_sqlText);
             }
         }
     }
