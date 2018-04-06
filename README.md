@@ -58,7 +58,7 @@ parser.SpecialToken += (sender, evt) => {
 // Store the found SQL text
 parser.SqlText += (sender, evt) => {
     sqlText = evt.SqlText.Trim();
-}
+};
 
 // Define the source to be used by the parser
 using (var source = new TextReaderSource(new StringReader(sqlScript), takeOwnership: true))
