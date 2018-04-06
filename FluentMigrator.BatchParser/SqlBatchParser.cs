@@ -6,6 +6,9 @@ using JetBrains.Annotations;
 
 namespace FluentMigrator.BatchParser
 {
+    /// <summary>
+    /// This is the base implementation of the SQL batch parser
+    /// </summary>
     public class SqlBatchParser
     {
         [NotNull]
@@ -19,6 +22,12 @@ namespace FluentMigrator.BatchParser
         [NotNull]
         private readonly string _newLine;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SqlBatchParser"/> class.
+        /// </summary>
+        /// <param name="rangeSearchers">The range searchers to be used</param>
+        /// <param name="specialTokenSearchers">The special token searchers to be used</param>
+        /// <param name="newLine">The new line sequence to be used for the output</param>
         public SqlBatchParser(
             [NotNull, ItemNotNull] IEnumerable<IRangeSearcher> rangeSearchers,
             [NotNull, ItemNotNull] IEnumerable<ISpecialTokenSearcher> specialTokenSearchers,
@@ -29,9 +38,21 @@ namespace FluentMigrator.BatchParser
             _newLine = newLine ?? Environment.NewLine;
         }
 
+        /// <summary>
+        /// An event handler that is called when a special token was found
+        /// </summary>
         public event EventHandler<SpecialTokenEventArgs> SpecialToken;
+
+        /// <summary>
+        /// An event handler that is called when an SQL text was collected and is considered complete
+        /// </summary>
         public event EventHandler<SqlTextEventArgs> SqlText;
 
+        /// <summary>
+        /// Process the <paramref name="source"/>
+        /// </summary>
+        /// <param name="source">The source to process/parse for SQL statement batches</param>
+        /// <param name="stripComments"><c>true</c> when the comments should be stripped</param>
         public void Process(ITextSource source, bool stripComments = false)
         {
             var output = new StringWriter()
@@ -60,7 +81,7 @@ namespace FluentMigrator.BatchParser
             if (reader == null)
                 return;
 
-            var status = SearchStatus.Init(context, reader);
+            var status = new SearchStatus(context, reader);
             do
             {
                 status = status.Process();
@@ -74,11 +95,19 @@ namespace FluentMigrator.BatchParser
             }
         }
 
+        /// <summary>
+        /// Invokes the <see cref="SpecialToken"/> event
+        /// </summary>
+        /// <param name="e">The event arguments</param>
         protected virtual void OnSpecialToken(SpecialTokenEventArgs e)
         {
             SpecialToken?.Invoke(this, e);
         }
 
+        /// <summary>
+        /// Invokes the <see cref="SqlText"/> event
+        /// </summary>
+        /// <param name="e">The event arguments</param>
         protected virtual void OnSqlText(SqlTextEventArgs e)
         {
             SqlText?.Invoke(this, e);

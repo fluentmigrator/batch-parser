@@ -6,6 +6,9 @@ using JetBrains.Annotations;
 
 namespace FluentMigrator.BatchParser
 {
+    /// <summary>
+    /// The main class to perform SQL batch collection
+    /// </summary>
     internal class SearchStatus
     {
         [NotNull]
@@ -20,6 +23,25 @@ namespace FluentMigrator.BatchParser
         [CanBeNull]
         private readonly SpecialTokenInfo _foundToken;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SearchStatus"/> class.
+        /// </summary>
+        /// <param name="context">The search context</param>
+        /// <param name="reader">The reader to be read from</param>
+        public SearchStatus(
+            [NotNull] SearchContext context,
+            [NotNull] ILineReader reader)
+            : this(context, reader, new Stack<IRangeSearcher>(), null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SearchStatus"/> class
+        /// </summary>
+        /// <param name="context">The search context</param>
+        /// <param name="reader">The reader to be read from</param>
+        /// <param name="activeRanges">The stack of active ranges</param>
+        /// <param name="foundToken">The found special token</param>
         private SearchStatus(
             [NotNull] SearchContext context,
             [NotNull] ILineReader reader,
@@ -32,12 +54,10 @@ namespace FluentMigrator.BatchParser
             _foundToken = foundToken;
         }
 
-        [NotNull]
-        public static SearchStatus Init([NotNull] SearchContext context, [NotNull] ILineReader reader)
-        {
-            return new SearchStatus(context, reader, new Stack<IRangeSearcher>(), null);
-        }
-
+        /// <summary>
+        /// Tries to find the next token or range
+        /// </summary>
+        /// <returns><c>null</c> when no token or range could be found</returns>
         [CanBeNull]
         public SearchStatus Process()
         {
@@ -47,6 +67,54 @@ namespace FluentMigrator.BatchParser
             return FindRangeEnd();
         }
 
+        /// <summary>
+        /// Search a special token
+        /// </summary>
+        /// <param name="reader">The reader where the token should be searched in</param>
+        /// <param name="searchers">The collection of searchers to test</param>
+        /// <returns><c>null</c> when no token could be found</returns>
+        [CanBeNull]
+        private static SpecialTokenInfo FindToken([NotNull] ILineReader reader, [NotNull, ItemNotNull] IEnumerable<ISpecialTokenSearcher> searchers)
+        {
+            SpecialTokenInfo result = null;
+            foreach (var searcher in searchers)
+            {
+                var searcherResult = searcher.Find(reader);
+                if (searcherResult != null && (result == null || result.Index > searcherResult.Index))
+                {
+                    result = searcherResult;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Search for the start of a range
+        /// </summary>
+        /// <param name="reader">The reader where the range start token should be searched in</param>
+        /// <param name="searchers">The collection of searchers to test</param>
+        /// <returns><c>null</c> when no range could be found</returns>
+        [CanBeNull]
+        private static RangeStart FindRangeStart([NotNull] ILineReader reader, [NotNull, ItemNotNull] IEnumerable<IRangeSearcher> searchers)
+        {
+            RangeStart result = null;
+            foreach (var searcher in searchers)
+            {
+                var index = searcher.FindStartCode(reader);
+                if (index != -1 && (result == null || result.Index > index))
+                {
+                    result = new RangeStart(searcher, index);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Search for the end of a range
+        /// </summary>
+        /// <returns><c>null</c> when no range end token could be found</returns>
         [CanBeNull]
         private SearchStatus FindRangeEnd()
         {
@@ -93,6 +161,13 @@ namespace FluentMigrator.BatchParser
             return new SearchStatus(_context, nextReader, _activeRanges, null);
         }
 
+        /// <summary>
+        /// Search for a token or range start token
+        /// </summary>
+        /// <remarks>
+        /// In other words: Search for everything that is allowed outside of a range.
+        /// </remarks>
+        /// <returns><c>null</c> if neither a token nor a range start sequence could be found</returns>
         [CanBeNull]
         private SearchStatus FindTokenOrRangeStart()
         {
@@ -122,6 +197,12 @@ namespace FluentMigrator.BatchParser
             return UseNewRange(_reader, rangeStart);
         }
 
+        /// <summary>
+        /// Handle the case where a new range start sequence was found
+        /// </summary>
+        /// <param name="reader">The reader where the sequence was found</param>
+        /// <param name="info">Information about the start sequence</param>
+        /// <returns>A new search status</returns>
         [NotNull]
         private SearchStatus UseNewRange([NotNull] ILineReader reader, [NotNull] RangeStart info)
         {
@@ -175,37 +256,6 @@ namespace FluentMigrator.BatchParser
             }
 
             return reader.Advance(readLength + skipLength);
-        }
-
-        private SpecialTokenInfo FindToken([NotNull] ILineReader reader, [NotNull, ItemNotNull] IEnumerable<ISpecialTokenSearcher> searchers)
-        {
-            SpecialTokenInfo result = null;
-            foreach (var searcher in searchers)
-            {
-                var searcherResult = searcher.Find(reader);
-                if (searcherResult != null && (result == null || result.Index > searcherResult.Index))
-                {
-                    result = searcherResult;
-                }
-            }
-
-            return result;
-        }
-
-        [CanBeNull]
-        private static RangeStart FindRangeStart([NotNull] ILineReader reader, [NotNull, ItemNotNull] IEnumerable<IRangeSearcher> searchers)
-        {
-            RangeStart result = null;
-            foreach (var searcher in searchers)
-            {
-                var index = searcher.FindStartCode(reader);
-                if (index != -1 && (result == null || result.Index > index))
-                {
-                    result = new RangeStart(searcher, index);
-                }
-            }
-
-            return result;
         }
 
         private class RangeStart

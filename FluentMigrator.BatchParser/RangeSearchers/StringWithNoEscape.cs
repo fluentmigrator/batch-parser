@@ -2,11 +2,22 @@
 
 namespace FluentMigrator.BatchParser.RangeSearchers
 {
+    /// <summary>
+    /// Ranges with multi-character start and end tokens (e.g. <c>/* */</c>)
+    /// </summary>
+    /// <remarks>
+    /// Escaping is not supported.
+    /// </remarks>
     public class StringWithNoEscape : IRangeSearcher
     {
         private readonly Regex _startCodeRegex;
         private readonly Regex _endCodeRegex;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StringWithNoEscape"/> class.
+        /// </summary>
+        /// <param name="startAndEndCode">The start- and end code string</param>
+        /// <param name="isComment">Is this range a comment?</param>
         public StringWithNoEscape(string startAndEndCode, bool isComment = false)
         {
             IsComment = isComment;
@@ -17,6 +28,12 @@ namespace FluentMigrator.BatchParser.RangeSearchers
             _startCodeRegex = _endCodeRegex = new Regex(codePattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StringWithNoEscape"/> class.
+        /// </summary>
+        /// <param name="startCode">The start code</param>
+        /// <param name="endCode">The end code</param>
+        /// <param name="isComment">Is this range a comment?</param>
         public StringWithNoEscape(string startCode, string endCode, bool isComment = false)
         {
             IsComment = isComment;
@@ -30,11 +47,16 @@ namespace FluentMigrator.BatchParser.RangeSearchers
             _endCodeRegex = new Regex(endCodePattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         }
 
+        /// <inheritdoc />
         public int StartCodeLength { get; }
+
+        /// <inheritdoc />
         public int EndCodeLength { get; }
 
+        /// <inheritdoc />
         public bool IsComment { get; }
 
+        /// <inheritdoc />
         public int FindStartCode(ILineReader reader)
         {
             var match = _startCodeRegex.Match(reader.Line, reader.Index);
@@ -43,6 +65,7 @@ namespace FluentMigrator.BatchParser.RangeSearchers
             return match.Index;
         }
 
+        /// <inheritdoc />
         public EndCodeSearchResult FindEndCode(ILineReader reader)
         {
             var match = _endCodeRegex.Match(reader.Line, reader.Index);

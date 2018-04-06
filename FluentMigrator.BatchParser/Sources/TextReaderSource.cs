@@ -5,22 +5,38 @@ using JetBrains.Annotations;
 
 namespace FluentMigrator.BatchParser.Sources
 {
+    /// <summary>
+    /// A <see cref="ITextSource"/> implementation that uses a <see cref="TextReader"/> as source.
+    /// </summary>
     public class TextReaderSource : ITextSource, IDisposable
     {
         private readonly TextReader _reader;
         private readonly bool _isOwner;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TextReaderSource"/> class.
+        /// </summary>
+        /// <param name="reader">The text reader to use</param>
+        /// <remarks>
+        /// This function doesn't take ownership of the <paramref name="reader"/>.
+        /// </remarks>
         public TextReaderSource([NotNull] TextReader reader)
             : this(reader, false)
         {
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TextReaderSource"/> class.
+        /// </summary>
+        /// <param name="reader">The text reader to use</param>
+        /// <param name="takeOwnership"><c>true</c> when the <see cref="TextReaderSource"/> should become the owner of the <paramref name="reader"/></param>
         public TextReaderSource([NotNull] TextReader reader, bool takeOwnership)
         {
             _reader = reader;
             _isOwner = takeOwnership;
         }
 
+        /// <inheritdoc />
         public ILineReader CreateReader()
         {
             var currentLine = _reader.ReadLine();
@@ -32,6 +48,7 @@ namespace FluentMigrator.BatchParser.Sources
             return new LineReader(_reader, currentLine, 0);
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             if (_isOwner)

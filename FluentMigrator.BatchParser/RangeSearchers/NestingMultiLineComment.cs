@@ -2,11 +2,17 @@
 
 namespace FluentMigrator.BatchParser.RangeSearchers
 {
+    /// <summary>
+    /// An example implementation of a nested multi-line comment (e.g. <c>/* comment /* nested */ */</c>)
+    /// </summary>
     public sealed class NestingMultiLineComment : IRangeSearcher
     {
         private readonly Regex _startCodeRegex;
         private readonly Regex _endCodeRegex;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NestingMultiLineComment"/> class.
+        /// </summary>
         public NestingMultiLineComment()
         {
             var startCode = "/*";
@@ -22,11 +28,16 @@ namespace FluentMigrator.BatchParser.RangeSearchers
             _endCodeRegex = new Regex(endCodePattern, RegexOptions.CultureInvariant | RegexOptions.Compiled);
         }
 
+        /// <inheritdoc />
         public int StartCodeLength { get; }
+
+        /// <inheritdoc />
         public int EndCodeLength { get; }
 
+        /// <inheritdoc />
         public bool IsComment => true;
 
+        /// <inheritdoc />
         public int FindStartCode(ILineReader reader)
         {
             var match = _startCodeRegex.Match(reader.Line, reader.Index);
@@ -35,6 +46,7 @@ namespace FluentMigrator.BatchParser.RangeSearchers
             return match.Index;
         }
 
+        /// <inheritdoc />
         public EndCodeSearchResult FindEndCode(ILineReader reader)
         {
             var matchStart = _startCodeRegex.Match(reader.Line, reader.Index);

@@ -4,16 +4,24 @@ using JetBrains.Annotations;
 
 namespace FluentMigrator.BatchParser.Sources
 {
+    /// <summary>
+    /// A <see cref="ITextSource"/> implementation that uses lines as input
+    /// </summary>
     public class LinesSource : ITextSource
     {
         [NotNull]
         private readonly IEnumerable<string> _batchSource;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LinesSource"/> class.
+        /// </summary>
+        /// <param name="batchSource">The collection of lines to be used as source</param>
         public LinesSource([NotNull] IEnumerable<string> batchSource)
         {
             _batchSource = batchSource;
         }
 
+        /// <inheritdoc />
         public ILineReader CreateReader()
         {
             var enumerator = _batchSource.GetEnumerator();

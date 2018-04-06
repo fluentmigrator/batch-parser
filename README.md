@@ -24,3 +24,46 @@ strings.
 
 Search for special tokens like `GO`, or `;`. This allows
 splitting the SQL script into SQL statements and batches.
+
+## Example
+
+```csharp
+// This is the variable with your SQL script
+var sqlScript = "...";
+
+// This is the found SQL text
+string sqlText = null;
+
+// The parser does all the work for us
+var parser = new SqlServerBatchParser();
+
+// Handle the GO token
+parser.SpecialToken += (sender, evt) => {
+    // Handle the special token (e.g. GO)
+    if (string.IsNullOrEmpty(sqlText)) {
+        // A GO was found, but no SQL statements
+        return;
+    }
+
+    // Execute the sqlText
+    // TODO...
+
+    // Reset the variable to avoid
+    // executing the same SQL code
+    // twice when a second GO follows
+    // without SQL text in between.
+    sqlText = null;
+};
+
+// Store the found SQL text
+parser.SqlText += (sender, evt) => {
+    sqlText = evt.SqlText.Trim();
+}
+
+// Define the source to be used by the parser
+using (var source = new TextReaderSource(new StringReader(sqlScript), takeOwnership: true))
+{
+    // This is where the hard stuff happens
+    parser.Process(source, stripComments: true);
+}
+```
