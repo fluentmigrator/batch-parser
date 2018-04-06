@@ -2,7 +2,7 @@
   "profiles": {
     "TestSqlServerBatchParser": {
       "commandName": "Project",
-      "commandLineArgs": "test.sql -s"
+      "commandLineArgs": "test.sql -s --strip"
     }
   }
 }

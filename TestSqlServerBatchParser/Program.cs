@@ -15,10 +15,12 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
+using System.Text;
 
 using FluentMigrator.BatchParser;
+using FluentMigrator.BatchParser.RangeSearchers;
 using FluentMigrator.BatchParser.Sources;
 using FluentMigrator.BatchParser.SpecialTokenSearchers;
 
@@ -26,9 +28,11 @@ using McMaster.Extensions.CommandLineUtils;
 
 namespace TestSqlServerBatchParser
 {
-    class Program
+    internal static class Program
     {
-        private static string _sqlText;
+        private static StringBuilder _sqlText;
+        private static string _sqlStatement;
+        private static bool _outputEverySqlStatement;
 
         static int Main(string[] args)
         {
@@ -37,12 +41,38 @@ namespace TestSqlServerBatchParser
 
             var scriptFileName = app.Argument<string>("script", "SQL script file name")
                                     .IsRequired();
-            var stripComments = app.Option("-s|--strip", "Strip comments", CommandOptionType.NoValue);
+            var stripComments = app.Option("--strip", "Strip comments", CommandOptionType.NoValue);
+            var singleStatement = app.Option("-s|--single", "Output single statements", CommandOptionType.NoValue);
 
             app.OnExecute(
                 () =>
                 {
-                    var batchParser = new SqlServerBatchParser();
+                    // The default range searchers
+                    var rangeSearchers = new List<IRangeSearcher>
+                    {
+                        new MultiLineComment(),
+                        new DoubleDashSingleLineComment(),
+                        new PoundSignSingleLineComment(),
+                        new SqlString(),
+                    };
+
+                    // The special token searchers
+                    var specialTokenSearchers = new List<ISpecialTokenSearcher>();
+
+                    // Add SQL server specific range searcher
+                    rangeSearchers.Add(new SqlServerIdentifier());
+
+                    // Add SQL server specific token searcher
+                    specialTokenSearchers.Add(new GoSearcher());
+
+                    // We want every single SQL statement
+                    _outputEverySqlStatement = singleStatement.HasValue();
+                    if (_outputEverySqlStatement)
+                    {
+                        specialTokenSearchers.Add(new SemicolonSearcher());
+                    }
+
+                    var batchParser = new SqlBatchParser(rangeSearchers, specialTokenSearchers);
                     batchParser.SpecialToken += BatchParserOnSpecialToken;
                     batchParser.SqlText += BatchParserOnSqlText;
 
@@ -61,7 +91,21 @@ namespace TestSqlServerBatchParser
 
         private static void BatchParserOnSqlText(object sender, SqlTextEventArgs sqlTextEventArgs)
         {
-            _sqlText = sqlTextEventArgs.SqlText.Trim();
+            var content = sqlTextEventArgs.SqlText.Trim();
+            if (_outputEverySqlStatement)
+            {
+                if (_sqlText == null)
+                    _sqlText = new StringBuilder();
+                if (!string.IsNullOrEmpty(content))
+                {
+                    _sqlText.Append(content).Append(';').AppendLine();
+                    _sqlStatement = content;
+                }
+            }
+            else
+            {
+                _sqlText = new StringBuilder(sqlTextEventArgs.SqlText.Trim());
+            }
         }
 
         private static void BatchParserOnSpecialToken(object sender, SpecialTokenEventArgs specialTokenEventArgs)
@@ -69,16 +113,21 @@ namespace TestSqlServerBatchParser
             if (specialTokenEventArgs.Opaque is GoSearcher.GoSearcherParameters goParameters)
             {
                 RunSql(goParameters.Count);
+                _sqlText = null;
             }
-
-            _sqlText = null;
+            else if (!string.IsNullOrEmpty(_sqlStatement))
+            {
+                Console.Out.WriteLine("Statement: {0};", _sqlStatement);
+                _sqlStatement = null;
+            }
         }
 
         private static void RunSql(int count = 1)
         {
-            if (string.IsNullOrEmpty(_sqlText))
+            if ((_sqlText?.Length ?? 0) == 0)
                 return;
 
+            Console.Out.WriteLine("Executing batch:");
             for (var i = 0; i != count; ++i)
             {
                 Console.WriteLine(_sqlText);
