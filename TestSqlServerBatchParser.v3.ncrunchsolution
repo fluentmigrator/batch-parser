@@ -1,7 +1,11 @@
 ﻿<SolutionConfiguration>
   <Settings>
     <AllowParallelTestExecution>True</AllowParallelTestExecution>
-    <MetricsExclusionList />
+    <MetricsExclusionList>
+      <Value>FluentMigrator.BatchParser\FluentMigrator.BatchParser.csproj:net45</Value>
+      <Value>FluentMigrator.BatchParser\FluentMigrator.BatchParser.csproj:net40</Value>
+      <Value>TestSqlServerBatchParser\TestSqlServerBatchParser.csproj</Value>
+    </MetricsExclusionList>
     <SolutionConfigured>True</SolutionConfigured>
   </Settings>
 </SolutionConfiguration>
