@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 
 using FluentMigrator.BatchParser;
 using FluentMigrator.BatchParser.Sources;
+using FluentMigrator.BatchParser.SpecialTokenSearchers;
 
 using McMaster.Extensions.CommandLineUtils;
 
@@ -27,8 +28,6 @@ namespace TestSqlServerBatchParser
 {
     class Program
     {
-        private static readonly Regex _regex = new Regex(@"^\s*(?<statement>GO(\s+(?<count>\d)+)?)\s*$", RegexOptions.CultureInvariant | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
         private static string _sqlText;
 
         static int Main(string[] args)
@@ -67,14 +66,10 @@ namespace TestSqlServerBatchParser
 
         private static void BatchParserOnSpecialToken(object sender, SpecialTokenEventArgs specialTokenEventArgs)
         {
-            var match = _regex.Match(specialTokenEventArgs.Token);
-            if (!match.Success)
-                throw new InvalidOperationException("Unknown special token");
-
-            var countGroup = match.Groups["count"];
-            var count = countGroup.Success && countGroup.Length != 0 ? Convert.ToInt32(countGroup.Value, 10) : 1;
-
-            RunSql(count);
+            if (specialTokenEventArgs.Opaque is GoSearcher.GoSearcherParameters goParameters)
+            {
+                RunSql(goParameters.Count);
+            }
 
             _sqlText = null;
         }
