@@ -33,7 +33,7 @@ namespace FluentMigrator.BatchParser.Tests
         [TestCase(typeof(SqlServerIdentifier), 1, 1)]
         [TestCase(typeof(SqlString), 1, 1)]
         [TestCase(typeof(MultiLineComment), 2, 2)]
-        [TestCase(typeof(SingleLineComment), 2, 0)]
+        [TestCase(typeof(DoubleDashSingleLineComment), 2, 0)]
         public void TestConfiguration(Type type, int startLength, int endLength)
         {
             var instance = Activator.CreateInstance(type);
@@ -247,7 +247,7 @@ namespace FluentMigrator.BatchParser.Tests
 
         [TestCase("   -- qweqwe", " qweqwe")]
         [TestCase("   -- qwe\nqwe", " qwe")]
-        public void TestSingleLineComment(string input, string expected)
+        public void TestDoubleDashSingleLineComment(string input, string expected)
         {
             var source = new TextReaderSource(new StringReader(input));
             var reader = source.CreateReader();
@@ -259,7 +259,45 @@ namespace FluentMigrator.BatchParser.Tests
                 NewLine = "\n",
             };
 
-            var rangeSearcher = new SingleLineComment();
+            var rangeSearcher = new DoubleDashSingleLineComment();
+            while (reader != null)
+            {
+                var startIndex = rangeSearcher.FindStartCode(reader);
+                if (startIndex == -1)
+                {
+                    reader = reader.Advance(reader.Length);
+                    continue;
+                }
+
+                reader = reader.Advance(startIndex + rangeSearcher.StartCodeLength);
+                Assert.IsNotNull(reader);
+
+                var endInfo = rangeSearcher.FindEndCode(reader);
+                Assert.IsNotNull(endInfo);
+
+                var contentLength = endInfo.Index - reader.Index;
+                writer.Write(reader.ReadString(contentLength));
+                reader = reader.Advance(contentLength + rangeSearcher.EndCodeLength);
+            }
+
+            Assert.AreEqual(expected, content.ToString());
+        }
+
+        [TestCase("   # qweqwe", " qweqwe")]
+        [TestCase("   # qwe\nqwe", " qwe")]
+        public void TestPoundSignSingleLineComment(string input, string expected)
+        {
+            var source = new TextReaderSource(new StringReader(input));
+            var reader = source.CreateReader();
+            Assert.IsNotNull(reader);
+
+            var content = new StringBuilder();
+            var writer = new StringWriter(content)
+            {
+                NewLine = "\n",
+            };
+
+            var rangeSearcher = new PoundSignSingleLineComment();
             while (reader != null)
             {
                 var startIndex = rangeSearcher.FindStartCode(reader);
