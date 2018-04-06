@@ -14,6 +14,7 @@
 // limitations under the License.
 #endregion
 
+using System;
 using System.Collections.Generic;
 
 using JetBrains.Annotations;
@@ -25,14 +26,14 @@ namespace FluentMigrator.BatchParser.Sources
     /// </summary>
     public class LinesSource : ITextSource
     {
-        [NotNull]
+        [NotNull, ItemNotNull]
         private readonly IEnumerable<string> _batchSource;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LinesSource"/> class.
         /// </summary>
         /// <param name="batchSource">The collection of lines to be used as source</param>
-        public LinesSource([NotNull] IEnumerable<string> batchSource)
+        public LinesSource([NotNull, ItemNotNull] IEnumerable<string> batchSource)
         {
             _batchSource = batchSource;
         }
@@ -55,9 +56,10 @@ namespace FluentMigrator.BatchParser.Sources
             {
                 _enumerator = enumerator;
                 Index = index;
+                Line = _enumerator.Current ?? throw new InvalidOperationException("The returned line must not be null");
             }
 
-            public string Line => _enumerator.Current;
+            public string Line { get; private set; }
 
             public int Index { get; }
 
@@ -81,12 +83,14 @@ namespace FluentMigrator.BatchParser.Sources
                         length -= remaining;
                         if (!_enumerator.MoveNext())
                             return null;
+
                         currentIndex = 0;
-                        currentLine = _enumerator.Current;
+                        currentLine = _enumerator.Current ?? throw new InvalidOperationException("The returned line must not be null");
                         remaining = currentLine.Length;
                     } while (length >= remaining && length != 0);
                 }
 
+                Line = currentLine;
                 currentIndex += length;
                 return new LineReader(_enumerator, currentIndex);
             }

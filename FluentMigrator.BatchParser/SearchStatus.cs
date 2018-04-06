@@ -164,8 +164,10 @@ namespace FluentMigrator.BatchParser
                 if (_context.StripComments && searcher.IsComment)
                 {
                     reader = reader.Advance(result.Index - reader.Index);
+                    Debug.Assert(reader != null, "The returned ILineReader must not be null");
                 }
 
+                Debug.Assert(result.NestedRangeSearcher != null, "result.NestedRangeSearcher != null");
                 return UseNewRange(reader, new RangeStart(result.NestedRangeSearcher, result.Index));
             }
 
