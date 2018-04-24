@@ -245,30 +245,44 @@ namespace FluentMigrator.BatchParser.Tests
             }
         }
 
-        [TestCase("   -- qweqwe", " qweqwe")]
-        [TestCase("   -- qwe\nqwe", " qwe")]
-        public void TestDoubleDashSingleLineComment(string input, string expected)
+        [TestCase("   -- qweqwe", " qweqwe", "   ")]
+        [TestCase("   -- qwe\nqwe", " qwe", "   \nqwe")]
+        [TestCase("asd -- qwe\nqwe", " qwe", "asd \nqwe")]
+        public void TestDoubleDashSingleLineComment(string input, string expectedComment, string expectedOther)
         {
             var source = new TextReaderSource(new StringReader(input));
             var reader = source.CreateReader();
             Assert.IsNotNull(reader);
 
-            var content = new StringBuilder();
-            var writer = new StringWriter(content)
+            var commentContent = new StringBuilder();
+            var commentWriter = new StringWriter(commentContent)
             {
                 NewLine = "\n",
             };
 
+            var otherContent = new StringBuilder();
+            var otherWriter = new StringWriter(otherContent)
+            {
+                NewLine = "\n",
+            };
+
+            var addNewLine = false;
             var rangeSearcher = new DoubleDashSingleLineComment();
             while (reader != null)
             {
+                if (addNewLine)
+                    otherWriter.WriteLine();
+
                 var startIndex = rangeSearcher.FindStartCode(reader);
                 if (startIndex == -1)
                 {
+                    otherWriter.Write(reader.ReadString(reader.Length));
+                    addNewLine = true;
                     reader = reader.Advance(reader.Length);
                     continue;
                 }
 
+                otherWriter.Write(reader.ReadString(startIndex));
                 reader = reader.Advance(startIndex + rangeSearcher.StartCodeLength);
                 Assert.IsNotNull(reader);
 
@@ -276,37 +290,52 @@ namespace FluentMigrator.BatchParser.Tests
                 Assert.IsNotNull(endInfo);
 
                 var contentLength = endInfo.Index - reader.Index;
-                writer.Write(reader.ReadString(contentLength));
+                commentWriter.Write(reader.ReadString(contentLength));
+                addNewLine = (contentLength + rangeSearcher.EndCodeLength) == reader.Length;
                 reader = reader.Advance(contentLength + rangeSearcher.EndCodeLength);
             }
 
-            Assert.AreEqual(expected, content.ToString());
+            Assert.AreEqual(expectedComment, commentContent.ToString());
+            Assert.AreEqual(expectedOther, otherContent.ToString());
         }
 
-        [TestCase("   # qweqwe", " qweqwe")]
-        [TestCase("   # qwe\nqwe", " qwe")]
-        public void TestPoundSignSingleLineComment(string input, string expected)
+        [TestCase("   # qweqwe", " qweqwe", "   ")]
+        [TestCase("   # qwe\nqwe", " qwe", "   \nqwe")]
+        public void TestPoundSignSingleLineComment(string input, string expectedComment, string expectedOther)
         {
             var source = new TextReaderSource(new StringReader(input));
             var reader = source.CreateReader();
             Assert.IsNotNull(reader);
 
-            var content = new StringBuilder();
-            var writer = new StringWriter(content)
+            var commentContent = new StringBuilder();
+            var commentWriter = new StringWriter(commentContent)
             {
                 NewLine = "\n",
             };
 
+            var otherContent = new StringBuilder();
+            var otherWriter = new StringWriter(otherContent)
+            {
+                NewLine = "\n",
+            };
+
+            var addNewLine = false;
             var rangeSearcher = new PoundSignSingleLineComment();
             while (reader != null)
             {
+                if (addNewLine)
+                    otherWriter.WriteLine();
+
                 var startIndex = rangeSearcher.FindStartCode(reader);
                 if (startIndex == -1)
                 {
+                    otherWriter.Write(reader.ReadString(reader.Length));
+                    addNewLine = true;
                     reader = reader.Advance(reader.Length);
                     continue;
                 }
 
+                otherWriter.Write(reader.ReadString(startIndex));
                 reader = reader.Advance(startIndex + rangeSearcher.StartCodeLength);
                 Assert.IsNotNull(reader);
 
@@ -314,11 +343,13 @@ namespace FluentMigrator.BatchParser.Tests
                 Assert.IsNotNull(endInfo);
 
                 var contentLength = endInfo.Index - reader.Index;
-                writer.Write(reader.ReadString(contentLength));
+                commentWriter.Write(reader.ReadString(contentLength));
+                addNewLine = (contentLength + rangeSearcher.EndCodeLength) == reader.Length;
                 reader = reader.Advance(contentLength + rangeSearcher.EndCodeLength);
             }
 
-            Assert.AreEqual(expected, content.ToString());
+            Assert.AreEqual(expectedComment, commentContent.ToString());
+            Assert.AreEqual(expectedOther, otherContent.ToString());
         }
 
         [Test]
