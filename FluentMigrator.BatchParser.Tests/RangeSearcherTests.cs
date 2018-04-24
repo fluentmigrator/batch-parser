@@ -301,6 +301,7 @@ namespace FluentMigrator.BatchParser.Tests
 
         [TestCase("   # qweqwe", " qweqwe", "   ")]
         [TestCase("   # qwe\nqwe", " qwe", "   \nqwe")]
+        [TestCase("asd # qwe\nqwe", "", "asd # qwe\nqwe")]
         public void TestPoundSignSingleLineComment(string input, string expectedComment, string expectedOther)
         {
             var source = new TextReaderSource(new StringReader(input));
