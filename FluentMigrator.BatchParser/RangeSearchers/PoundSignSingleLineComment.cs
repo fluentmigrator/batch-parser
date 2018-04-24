@@ -14,54 +14,19 @@
 // limitations under the License.
 #endregion
 
-using System.Text.RegularExpressions;
-
 namespace FluentMigrator.BatchParser.RangeSearchers
 {
     /// <summary>
     /// A single line comment starting with a pound sign (<c># comment</c>)
     /// </summary>
-    public sealed class PoundSignSingleLineComment : IRangeSearcher
+    public sealed class PoundSignSingleLineComment : SingleLineComment
     {
-        private readonly Regex _startCodeRegex;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="PoundSignSingleLineComment"/> class.
         /// </summary>
         public PoundSignSingleLineComment()
+            : base("#", true)
         {
-            var startCode = "#";
-            _startCodeRegex = new Regex(Regex.Escape(startCode), RegexOptions.CultureInvariant | RegexOptions.Compiled);
-            StartCodeLength = startCode.Length;
-        }
-
-        /// <inheritdoc />
-        public int StartCodeLength { get; }
-
-        /// <inheritdoc />
-        public int EndCodeLength => 0;
-
-        /// <inheritdoc />
-        public bool IsComment => true;
-
-        /// <inheritdoc />
-        public int FindStartCode(ILineReader reader)
-        {
-            if (reader.Index != 0)
-                return -1;
-            var match = _startCodeRegex.Match(reader.Line, reader.Index);
-            if (!match.Success)
-                return -1;
-            var skippedText = reader.ReadString(match.Index - reader.Index);
-            if (!string.IsNullOrWhiteSpace(skippedText))
-                return -1;
-            return match.Index;
-        }
-
-        /// <inheritdoc />
-        public EndCodeSearchResult FindEndCode(ILineReader reader)
-        {
-            return reader.Line.Length;
         }
     }
 }
